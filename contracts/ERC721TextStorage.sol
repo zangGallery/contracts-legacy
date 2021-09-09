@@ -14,10 +14,10 @@ abstract contract ERC721TextStorage is ERC721 {
     mapping(uint256 => string) private _textURIs;
 
     /**
-     * @dev See {IERC721Metadata-tokenURI}.
+     * @dev Returns the `textURI` associated with tokenId.
      */
     function textURI(uint256 tokenId) public view virtual returns (string memory) {
-        require(_exists(tokenId), "ERC721URIStorage: URI query for nonexistent token");
+        require(_exists(tokenId), "ERC721TextStorage: URI query for nonexistent token");
 
         string memory _textURI = _textURIs[tokenId];
         
@@ -25,14 +25,14 @@ abstract contract ERC721TextStorage is ERC721 {
     }
 
     /**
-     * @dev Sets `_textURI` as the tokenURI of `tokenId`.
+     * @dev Sets `_textURI` as the textURI of `tokenId`.
      *
      * Requirements:
      *
      * - `tokenId` must exist.
      */
     function _setTextURI(uint256 tokenId, string memory _textURI) internal virtual {
-        require(_exists(tokenId), "ERC721URIStorage: URI set of nonexistent token");
+        require(_exists(tokenId), "ERC721TextStorage: URI set of nonexistent token");
         _textURIs[tokenId] = _textURI;
     }
 

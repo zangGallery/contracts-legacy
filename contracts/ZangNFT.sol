@@ -10,7 +10,9 @@ contract ZangNFT is ERC721TextStorage {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
+    // tokenId to token name
     mapping(uint256 => string) private _names;
+    // tokenId to token description
     mapping(uint256 => string) private _descriptions;
 
     constructor() ERC721("ZangNFT", "ZNG") {}
@@ -41,7 +43,7 @@ contract ZangNFT is ERC721TextStorage {
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ERC721URIStorage: URI query for nonexistent token");
+        require(_exists(tokenId), "ERC721TextStorage: URI query for nonexistent token");
         /*string[4] memory parts;
         parts[
             0
