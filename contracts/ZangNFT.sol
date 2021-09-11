@@ -16,7 +16,7 @@ contract ZangNFT is ERC721TextStorage, ERC2981PerTokenRoyalties {
     // tokenId to token description
     mapping(uint256 => string) private _descriptions;
 
-    mapping(uint256 => address) private _creatorOf;
+    mapping(uint256 => address) private _authors;
 
     constructor() ERC721("ZangNFT", "ZNG") {}
 
@@ -24,10 +24,10 @@ contract ZangNFT is ERC721TextStorage, ERC2981PerTokenRoyalties {
         return super.supportsInterface(interfaceId);
     }
 
-    function creatorOf(uint256 tokenId) public view returns (address) {
-        address creator = _creatorOf[tokenId];
-        require(creator != address(0), "ZangNFT: creator query for nonexistent token");
-        return creator;
+    function authorOf(uint256 tokenId) public view returns (address) {
+        address author = _authors[tokenId];
+        require(author != address(0), "ZangNFT: author query for nonexistent token");
+        return author;
     }
 
     function mint(string memory textURI, string memory name, string memory description)
@@ -39,22 +39,12 @@ contract ZangNFT is ERC721TextStorage, ERC2981PerTokenRoyalties {
         uint256 newItemId = _tokenIds.current();
         _mint(msg.sender, newItemId);
         _setTextURI(newItemId, textURI);
-        _setName(newItemId, name);
-        _setDescription(newItemId, description);
-        _creatorOf[newItemId] = msg.sender;
+        _names[newItemId] = name;
+        _descriptions[newItemId] = description;
+        _authors[newItemId] = msg.sender;
         _setTokenRoyalty(newItemId, msg.sender, 10); //TODO: change to func params 
 
         return newItemId;
-    }
-
-    function _setName(uint256 tokenId, string memory _name) internal virtual {
-        require(_exists(tokenId), "ERC721URIStorage: URI set of nonexistent token");
-        _names[tokenId] = _name;
-    }
-
-    function _setDescription(uint256 tokenId, string memory _description) internal virtual {
-        require(_exists(tokenId), "ERC721URIStorage: URI set of nonexistent token");
-        _descriptions[tokenId] = _description;
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
