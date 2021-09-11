@@ -5,8 +5,9 @@ import {Base64} from "./MetadataUtils.sol";
 
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./ERC721TextStorage.sol";
+import "./ERC2981PerTokenRoyalties.sol";
 
-contract ZangNFT is ERC721TextStorage {
+contract ZangNFT is ERC721TextStorage, ERC2981PerTokenRoyalties {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
@@ -16,6 +17,10 @@ contract ZangNFT is ERC721TextStorage {
     mapping(uint256 => string) private _descriptions;
 
     constructor() ERC721("ZangNFT", "ZNG") {}
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, ERC2981PerTokenRoyalties) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 
     function mint(string memory textURI, string memory name, string memory description)
         public
@@ -28,6 +33,7 @@ contract ZangNFT is ERC721TextStorage {
         _setTextURI(newItemId, textURI);
         _setName(newItemId, name);
         _setDescription(newItemId, description);
+        _setTokenRoyalty(newItemId, msg.sender, 10); //TODO: change to func params 
 
         return newItemId;
     }
