@@ -16,10 +16,18 @@ contract ZangNFT is ERC721TextStorage, ERC2981PerTokenRoyalties {
     // tokenId to token description
     mapping(uint256 => string) private _descriptions;
 
+    mapping(uint256 => address) private _creatorOf;
+
     constructor() ERC721("ZangNFT", "ZNG") {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, ERC2981PerTokenRoyalties) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    function creatorOf(uint256 tokenId) public view returns (address) {
+        address creator = _creatorOf[tokenId];
+        require(creator != address(0), "ZangNFT: creator query for nonexistent token");
+        return creator;
     }
 
     function mint(string memory textURI, string memory name, string memory description)
@@ -33,6 +41,7 @@ contract ZangNFT is ERC721TextStorage, ERC2981PerTokenRoyalties {
         _setTextURI(newItemId, textURI);
         _setName(newItemId, name);
         _setDescription(newItemId, description);
+        _creatorOf[newItemId] = msg.sender;
         _setTokenRoyalty(newItemId, msg.sender, 10); //TODO: change to func params 
 
         return newItemId;
