@@ -1,78 +1,67 @@
-// contracts/ZangNFT.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
-import {Base64} from "./MetadataUtils.sol";
 
+import {Base64} from "./MetadataUtils.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "./ERC721TextStorage.sol";
+import "./ERC1155OnChain.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import "./ERC2981PerTokenRoyalties.sol";
 
-contract ZangNFT is ERC721TextStorage, ERC2981PerTokenRoyalties {
+contract ZangNFT is
+    ERC1155OnChain,
+    IERC1155MetadataURI,
+    ERC2981PerTokenRoyalties
+{
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    // tokenId to token name
+    mapping(uint256 => string) private _textURIs;
+
     mapping(uint256 => string) private _names;
-    // tokenId to token description
+
     mapping(uint256 => string) private _descriptions;
 
     mapping(uint256 => address) private _authors;
 
-    constructor() ERC721("ZangNFT", "ZNG") {}
+    constructor() ERC1155OnChain("ZangNFT", "ZNG") {}
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, ERC2981PerTokenRoyalties) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC1155OnChain, ERC2981PerTokenRoyalties, IERC165)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 
-    function authorOf(uint256 tokenId) public view returns (address) {
-        address author = _authors[tokenId];
-        require(author != address(0), "ZangNFT: author query for nonexistent token");
-        return author;
+    function lastTokenId() public view returns (uint256) {
+        return _tokenIds.current();
     }
 
-    function mint(string memory textURI, string memory name, string memory description)
-        public
-        returns (uint256)
-    {
-        _tokenIds.increment();
-
-        uint256 newItemId = _tokenIds.current();
-        _mint(msg.sender, newItemId);
-        _setTextURI(newItemId, textURI);
-        _names[newItemId] = name;
-        _descriptions[newItemId] = description;
-        _authors[newItemId] = msg.sender;
-        _setTokenRoyalty(newItemId, msg.sender, 10); //TODO: change to func params 
-
-        return newItemId;
+    function _exists(uint256 _tokenId) internal view returns (bool) {
+        return lastTokenId() >= _tokenId;
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ERC721TextStorage: URI query for nonexistent token");
-        /*string[4] memory parts;
-        parts[
-            0
-        ] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">';
-
-        //parts[1] = t
-
-        parts[2] = '</text><text x="10" y="40" class="base">';
-
-        parts[3] = "</text></svg>";
-
-        string memory output = string(
-            abi.encodePacked(parts[0], parts[1], parts[2], parts[3])
-        );*/
-
+    function uri(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "ZangNFT: uri query for nonexistent token");
         string memory json = Base64.encode(
             bytes(
                 string(
                     abi.encodePacked(
-                        '{ "name": "', _names[tokenId],'", ', 
-                        '"description" : ', '"', _descriptions[tokenId], '", ',
-                        //'"image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '", ' 
-                        '"textURI" : ', '"', textURI(tokenId), '"',
-                        '}'
+                        '{ "name": "',
+                        _names[tokenId],
+                        '", ',
+                        '"description" : ',
+                        '"',
+                        _descriptions[tokenId],
+                        '", ',
+                        //'"image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '", '
+                        '"textURI" : ',
+                        '"',
+                        textURI(tokenId),
+                        '"',
+                        "}"
                     )
                 )
             )
@@ -82,5 +71,53 @@ contract ZangNFT is ERC721TextStorage, ERC2981PerTokenRoyalties {
         );
 
         return output;
+    }
+
+    function authorOf(uint256 _tokenId) public view returns (address) {
+        address author = _authors[_tokenId];
+        require(
+            author != address(0),
+            "ZangNFT: author query for nonexistent token"
+        );
+        return author;
+    }
+
+    function mint(
+        string memory textURI_,
+        string memory name_,
+        string memory description_,
+        uint256 amount_,
+        uint256 royaltyPercentage_, //NB: two decimals, so 10% is 1000
+        address royaltyRecipient_,
+        bytes memory data_
+    ) public returns (uint256) {
+        _tokenIds.increment();
+
+        uint256 newTokenId = _tokenIds.current();
+        _mint(msg.sender, newTokenId, amount_, data_);
+        _setTextURI(newTokenId, textURI_);
+        _names[newTokenId] = name_;
+        _descriptions[newTokenId] = description_;
+        _authors[newTokenId] = msg.sender;
+        _setTokenRoyalty(newTokenId, royaltyRecipient_, royaltyPercentage_);
+
+        return newTokenId;
+    }
+
+    function _setTextURI(uint256 _tokenId, string memory _textURI) internal {
+        _textURIs[_tokenId] = _textURI;
+    }
+
+    function textURI(uint256 tokenId)
+        public
+        view
+        virtual
+        returns (string memory)
+    {
+        require(
+            _exists(tokenId),
+            "ZangNFT: textURI query for nonexistent token"
+        );
+        return _textURIs[tokenId];
     }
 }
