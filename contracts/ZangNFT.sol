@@ -39,12 +39,12 @@ contract ZangNFT is
         return _tokenIds.current();
     }
 
-    function _exists(uint256 _tokenId) internal view returns (bool) {
+    function exists(uint256 _tokenId) public view returns (bool) {
         return lastTokenId() >= _tokenId;
     }
 
     function uri(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ZangNFT: uri query for nonexistent token");
+        require(exists(tokenId), "ZangNFT: uri query for nonexistent token");
         string memory json = Base64.encode(
             bytes(
                 string(
@@ -115,7 +115,7 @@ contract ZangNFT is
         returns (string memory)
     {
         require(
-            _exists(tokenId),
+            exists(tokenId),
             "ZangNFT: textURI query for nonexistent token"
         );
         return _textURIs[tokenId];

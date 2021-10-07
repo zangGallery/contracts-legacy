@@ -212,7 +212,7 @@ contract ERC1155OnChain is Context, ERC165, IERC1155 {
         _doSafeBatchTransferAcceptanceCheck(operator, from, to, ids, amounts, data);
     }
 
-    /**
+    /*
      * @dev Creates `amount` tokens of token type `id`, and assigns them to `account`.
      *
      * Emits a {TransferSingle} event.
