@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "./ERC1155OnChain.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import "./ERC2981PerTokenRoyalties.sol";
+import {StringUtils} from "./StringUtils.sol";
 
 contract ZangNFT is
     ERC1155OnChain,
@@ -50,7 +51,7 @@ contract ZangNFT is
                 string(
                     abi.encodePacked(
                         '{ "name": "',
-                        _names[tokenId],
+                        string(StringUtils.insertBefore(bytes(_names[tokenId]), '"', '\\')),
                         '", ',
                         '"description" : ',
                         '"',
