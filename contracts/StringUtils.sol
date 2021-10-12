@@ -2,39 +2,10 @@
 
 pragma solidity ^0.8.0;
 
+// import "hardhat/console.sol";
+
 /// [MIT License]
 library StringUtils {
-    function extendBytes(bytes memory _bytes) private pure returns (bytes memory) {
-        bytes memory copy = new bytes(_bytes.length);
-        uint256 max = _bytes.length + 31;
-        for (uint256 i=32; i<=max; i+=32)
-        {
-            assembly { mstore(add(copy, i), mload(add(_bytes, i))) }
-        }
-        return copy;
-    }
-
-    function copyBytes(bytes memory _bytes) private pure returns (bytes memory) {
-        bytes memory copy = new bytes(_bytes.length);
-        for (uint256 i = 0; i < _bytes.length; i++) {
-            copy[i] = _bytes[i];
-        }
-
-        return copy;
-    }
-
-    function shiftRight(bytes memory _bytes, uint256 index) private pure returns (bytes memory) {
-        bytes memory copy = new bytes(_bytes.length + 1);
-        for (uint256 i = 0; i < index; i++) {
-            copy[i] = _bytes[i];
-        }
-        for (uint256 i = index; index < _bytes.length; i++) {
-            copy[i + 1] = _bytes[i];
-        }
-
-        return copy;
-    }
-
     function utfLength(bytes1 b) private pure returns (uint8) {
         if (b < 0x80) {
             return 1;
@@ -51,26 +22,46 @@ library StringUtils {
         }
     }
 
+    function firstN(bytes memory arr, uint256 n) internal pure returns (bytes memory) {
+        bytes memory newArray = new bytes(n);
+        for (uint256 i = 0; i < n; i++) {
+            newArray[i] = arr[i];
+        }
+
+        return newArray;
+    }
+
     function insertAsciiBefore(bytes memory str, bytes1 target, bytes1 insert) internal pure returns (bytes memory) {
         require(utfLength(target) == 1, "StringUtils: target must be ASCII");
         require(utfLength(insert) == 1, "StringUtils: insert must be ASCII");
 
-        bytes memory copy = copyBytes(str);
-        uint256 i = 0;
-        while (i < copy.length) {
-            bytes1 b = copy[i];
+        bytes memory newString = new bytes(str.length * 2);
+        uint256 from = 0;
+        uint256 to = 0;
+        while (from < str.length) {
+            // console.log("Test %s %s", from, uint8(str[from]));
+            // console.log("Index %s, char %s", from, copy);
+            bytes1 b = str[from];
             uint8 bLength = utfLength(b);
 
             if (bLength == 1 && b == target) {
                 // ASCII character that matches our target
-                copy = shiftRight(copy, i);
-                copy[i] = insert;
+                newString[to] = insert;
+                to++;
             }
 
-            i += bLength;
+            for (uint8 j = 0; j < bLength; j++) {
+                newString[to + j] = str[from + j];
+            }
 
+            to += bLength;
+            from += bLength;
         }
 
-        return copy;
+        return firstN(newString, to);
+    }
+
+    function insertAsciiBeforeString(string memory str, bytes1 target, bytes1 insert) internal pure returns (string memory) {
+        return string(insertAsciiBefore(bytes(str), target, insert));
     }
 }
