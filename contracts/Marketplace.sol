@@ -8,6 +8,7 @@ interface IZangNFT {
     function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes calldata data) external;
     function exists(uint256 _tokenId) external view returns (bool);
     function balanceOf(address account, uint256 id) external view returns (uint256);
+    function royaltyInfo(uint256 tokenId, uint256 value) external view returns (address receiver, uint256 royaltyAmount);
 }
 
 contract zangMarketplace is Pausable, Ownable {
@@ -77,10 +78,12 @@ contract zangMarketplace is Pausable, Ownable {
         emit TokenDelisted(_tokenId);
     }
 
-    function _handleFunds(address seller) private {
+    function _handleFunds(uint256 _tokenId, address seller) private {
         uint256 platformFee = msg.value * platformFeePercentage / 10000;
-        uint256 sellerEarnings = msg.value - platformFee;
+        (address creator, uint256 creatorFee) = ZangNFTAddress.royaltyInfo(_tokenId, msg.value);
+        uint256 sellerEarnings = msg.value - platformFee - creatorFee;
         payable(ZangCommissionAccount).transfer(platformFee);
+        payable(creator).transfer(creatorFee);
         payable(seller).transfer(sellerEarnings);
     }
 
@@ -96,7 +99,7 @@ contract zangMarketplace is Pausable, Ownable {
         // check if listing is satisfied
         require(msg.value == price * _amount, "Price does not match");
 
-        _handleFunds(seller);
+        _handleFunds(_tokenId, seller);
 
         ZangNFTAddress.safeTransferFrom(seller, msg.sender, _tokenId, _amount, "");
         _delistToken(_tokenId, _listingIndex);
