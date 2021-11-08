@@ -77,6 +77,13 @@ contract zangMarketplace is Pausable, Ownable {
         emit TokenDelisted(_tokenId);
     }
 
+    function _handleFunds(address seller) private {
+        uint256 platformFee = msg.value * platformFeePercentage / 10000;
+        uint256 sellerEarnings = msg.value - platformFee;
+        payable(ZangCommissionAccount).transfer(platformFee);
+        payable(seller).transfer(sellerEarnings);
+    }
+
     function buyToken(uint256 _tokenId, uint256 _listingIndex, uint256 _amount) public payable whenNotPaused {
         require(listings[_tokenId].length > _listingIndex, "Listing index out of bounds");
         require(listings[_tokenId][_listingIndex].seller != msg.sender, "Cannot buy from yourself");
@@ -89,7 +96,7 @@ contract zangMarketplace is Pausable, Ownable {
         // check if listing is satisfied
         require(msg.value == price * _amount, "Price does not match");
 
-        _handleFunds();
+        _handleFunds(seller);
 
         ZangNFTAddress.safeTransferFrom(seller, msg.sender, _tokenId, _amount, 0x0);
         _delistToken(_tokenId, _listingIndex);
