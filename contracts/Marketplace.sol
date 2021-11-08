@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IZangNFT {
-    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) external;
+    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes calldata data) external;
     function exists(uint256 _tokenId) external view returns (bool);
     function balanceOf(address account, uint256 id) external view returns (uint256);
 }
@@ -98,7 +98,7 @@ contract zangMarketplace is Pausable, Ownable {
 
         _handleFunds(seller);
 
-        ZangNFTAddress.safeTransferFrom(seller, msg.sender, _tokenId, _amount, 0x0);
+        ZangNFTAddress.safeTransferFrom(seller, msg.sender, _tokenId, _amount, "");
         _delistToken(_tokenId, _listingIndex);
 
         emit TokenPurchased(_tokenId, msg.sender, seller, _amount, price);
