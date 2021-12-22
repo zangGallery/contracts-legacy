@@ -42,8 +42,9 @@ contract zangMarketplace is Pausable, Ownable {
         uint256 amount;
     }
 
-    // a token can have multiple listings
-    mapping(uint256 => Listing[]) public listings;
+    // (tokenId => (listingId => Listing)) mapping
+    mapping(uint256 => mapping(uint256 => Listing)) public listings;
+    mapping(uint256 => uint256) public listingCount;
 
     constructor(IZangNFT _zangNFTAddress, address _ZangCommissionAccount) {
         ZangNFTAddress = _zangNFTAddress;
@@ -51,26 +52,28 @@ contract zangMarketplace is Pausable, Ownable {
     }
 
     function listToken(uint256 _tokenId, uint256 _price, uint256 _amount) public whenNotPaused {
-        require(_amount <= ZangNFTAddress.balanceOf(msg.sender, _tokenId), "Not enough tokens to list"); // Opz.
+        require(_amount <= ZangNFTAddress.balanceOf(msg.sender, _tokenId), "Not enough tokens to list"); // Opt.
         require(_price > 0, "Price must be greater than 0");
 
-        listings[_tokenId].push(Listing(_price, msg.sender, _amount));
+        uint256 listingId = listingCount[_tokenId];
+        listings[_tokenId][listingId] = Listing(_price, msg.sender, _amount);
+        listingCount[_tokenId]++;
         emit TokenListed(_tokenId, msg.sender, _amount, _price);
     }
 
-    function delistToken(uint256 _tokenId, uint256 _listingIndex) public whenNotPaused {
-        require(listings[_tokenId].length > _listingIndex, "Listing index out of bounds");
-        require(listings[_tokenId][_listingIndex].seller == msg.sender, "Only the seller can delist");
-        _delistToken(_tokenId, _listingIndex);
+    function delistToken(uint256 _tokenId, uint256 _listingId) public whenNotPaused {
+        require(_listingId < listingCount[_tokenId], "Listing ID out of bounds"); // Opt.
+        require(listings[_tokenId][_listingId].seller != address(0), "Cannot interact with a delisted listing"); // Opt.
+        require(listings[_tokenId][_listingId].seller == msg.sender, "Only the seller can delist");
+        _delistToken(_tokenId, _listingId);
     }
 
-    function _removeListing(uint256 _tokenId, uint256 _listingIndex) private {
-        listings[_tokenId][_listingIndex] = listings[_tokenId][listings[_tokenId].length - 1];
-        listings[_tokenId].pop();
+    function _removeListing(uint256 _tokenId, uint256 _listingId) private {
+        delete listings[_tokenId][_listingId];
     }
 
-    function _delistToken(uint256 _tokenId, uint256 _listingIndex) private {
-        _removeListing(_tokenId, _listingIndex);
+    function _delistToken(uint256 _tokenId, uint256 _listingId) private {
+        _removeListing(_tokenId, _listingId);
         emit TokenDelisted(_tokenId);
     }
 
@@ -86,16 +89,16 @@ contract zangMarketplace is Pausable, Ownable {
         payable(seller).transfer(sellerEarnings);
     }
 
-    function buyToken(uint256 _tokenId, uint256 _listingIndex, uint256 _amount) public payable whenNotPaused {
-        require(listings[_tokenId].length > _listingIndex, "Listing index out of bounds");
-        require(listings[_tokenId][_listingIndex].seller != msg.sender, "Cannot buy from yourself");
-        // TODO: Invert for clarity
-        require(listings[_tokenId][_listingIndex].amount >= _amount, "Not enough tokens to buy");
-        address seller = listings[_tokenId][_listingIndex].seller;
-        // if seller transfers tokens "for free", their listing is still active! if they get them back they can still be bought
-        require(ZangNFTAddress.balanceOf(seller, _tokenId) >= _amount, "Seller has not enough tokens anymore");
+    function buyToken(uint256 _tokenId, uint256 _listingId, uint256 _amount) public payable whenNotPaused {
+        require(_listingId < listingCount[_tokenId], "Listing index out of bounds");
+        require(listings[_tokenId][_listingId].seller != address(0), "Cannot interact with a delisted listing");
+        require(listings[_tokenId][_listingId].seller != msg.sender, "Cannot buy from yourself");
+        require(_amount < listings[_tokenId][_listingId].amount, "Not enough tokens to buy");
+        address seller = listings[_tokenId][_listingId].seller;
+        // If seller transfers tokens "for free", their listing is still active! If they get them back they can still be bought
+        require(_amount <= ZangNFTAddress.balanceOf(seller, _tokenId), "Seller does not have enough tokens anymore");
 
-        uint256 price = listings[_tokenId][_listingIndex].price;
+        uint256 price = listings[_tokenId][_listingId].price;
         // check if listing is satisfied
         require(msg.value == price * _amount, "Price does not match");
 
@@ -103,7 +106,7 @@ contract zangMarketplace is Pausable, Ownable {
 
         ZangNFTAddress.safeTransferFrom(seller, msg.sender, _tokenId, _amount, "");
         // TODO: Delist only if there are no more tokens left
-        _delistToken(_tokenId, _listingIndex);
+        _delistToken(_tokenId, _listingId);
         // TODO: Decrease listing amount
 
         emit TokenPurchased(_tokenId, msg.sender, seller, _amount, price);
