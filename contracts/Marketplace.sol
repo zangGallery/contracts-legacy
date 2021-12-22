@@ -53,6 +53,7 @@ contract zangMarketplace is Pausable, Ownable {
     }
 
     function listToken(uint256 _tokenId, uint256 _price, uint256 _amount) public whenNotPaused {
+        require(ZangNFTAddress.exists(_tokenId), "Token does not exist");
         require(_amount <= ZangNFTAddress.balanceOf(msg.sender, _tokenId), "Not enough tokens to list"); // Opt.
         // TODO: Check correct behaviour
         require(ZangNFTAddress.isApprovedForAll(msg.sender, address(this)), "Marketplace contract is not approved");
