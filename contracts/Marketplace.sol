@@ -9,6 +9,7 @@ interface IZangNFT {
     function exists(uint256 _tokenId) external view returns (bool);
     function balanceOf(address account, uint256 id) external view returns (uint256);
     function royaltyInfo(uint256 tokenId, uint256 value) external view returns (address receiver, uint256 royaltyAmount);
+    function isApprovedForAll(address account, address operator) external view returns (bool);
 }
 
 contract zangMarketplace is Pausable, Ownable {
@@ -53,6 +54,8 @@ contract zangMarketplace is Pausable, Ownable {
 
     function listToken(uint256 _tokenId, uint256 _price, uint256 _amount) public whenNotPaused {
         require(_amount <= ZangNFTAddress.balanceOf(msg.sender, _tokenId), "Not enough tokens to list"); // Opt.
+        // TODO: Check correct behaviour
+        require(ZangNFTAddress.isApprovedForAll(msg.sender, address(this)), "Marketplace contract is not approved");
         require(_price > 0, "Price must be greater than 0");
 
         uint256 listingId = listingCount[_tokenId];
