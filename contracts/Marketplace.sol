@@ -105,9 +105,14 @@ contract zangMarketplace is Pausable, Ownable {
         _handleFunds(_tokenId, seller);
 
         ZangNFTAddress.safeTransferFrom(seller, msg.sender, _tokenId, _amount, "");
-        // TODO: Delist only if there are no more tokens left
-        _delistToken(_tokenId, _listingId);
-        // TODO: Decrease listing amount
+
+        // Update listing
+        listings[_tokenId][_listingId].amount -= _amount;
+
+        // Delist a listing if all tokens have been sold
+        if (listings[_tokenId][_listingId].amount == 0) {
+            _delistToken(_tokenId, _listingId);
+        }
 
         emit TokenPurchased(_tokenId, msg.sender, seller, _amount, price);
     }
