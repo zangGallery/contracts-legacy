@@ -41,6 +41,7 @@ contract ZangNFT is
     }
 
     function exists(uint256 _tokenId) public view returns (bool) {
+        if(_tokenId == 0) return false;
         return lastTokenId() >= _tokenId;
     }
 
