@@ -12,7 +12,7 @@ interface IZangNFT {
     function isApprovedForAll(address account, address operator) external view returns (bool);
 }
 
-contract zangMarketplace is Pausable, Ownable {
+contract Marketplace is Pausable, Ownable {
 
     event TokenListed(
         uint256 indexed _tokenId,
@@ -97,7 +97,7 @@ contract zangMarketplace is Pausable, Ownable {
         require(_listingId < listingCount[_tokenId], "Listing index out of bounds");
         require(listings[_tokenId][_listingId].seller != address(0), "Cannot interact with a delisted listing");
         require(listings[_tokenId][_listingId].seller != msg.sender, "Cannot buy from yourself");
-        require(_amount < listings[_tokenId][_listingId].amount, "Not enough tokens to buy");
+        require(_amount <= listings[_tokenId][_listingId].amount, "Not enough tokens to buy");
         address seller = listings[_tokenId][_listingId].seller;
         // If seller transfers tokens "for free", their listing is still active! If they get them back they can still be bought
         require(_amount <= ZangNFTAddress.balanceOf(seller, _tokenId), "Seller does not have enough tokens anymore");
